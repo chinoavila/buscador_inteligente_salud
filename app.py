@@ -8,6 +8,18 @@ from utils import (
     show_instructions
 )
 
+# Configuración específica para Hugging Face Spaces
+if "HF_TOKEN" in os.environ:
+    os.environ["HUGGINGFACE_API_TOKEN"] = os.environ["HF_TOKEN"]
+
+# Configuración de página de Streamlit
+st.set_page_config(
+    page_title="Buscador Inteligente de Salud",
+    page_icon="🏥",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 def main():
     MAX_SEGUNDOS = 60
 

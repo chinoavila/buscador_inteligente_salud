@@ -1,3 +1,16 @@
+---
+title: Buscador Inteligente de Profesionales de Salud
+emoji: 🏥
+colorFrom: green
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.28.0
+app_file: app.py
+pinned: false
+license: mit
+python_version: 3.10.12
+---
+
 # Buscador Inteligente de Profesionales de Salud
 
 Una aplicación web desarrollada en Streamlit que utiliza inteligencia artificial para transcribir consultas médicas por voz, extraer entidades médicas y sugerir especialidades apropiadas.
@@ -146,6 +159,90 @@ docker-compose up --build
 docker-compose down -v
 docker system prune -a
 ```
+
+### Opción 3: Despliegue en Hugging Face Spaces 🤗
+
+#### 📋 Pasos Detallados para Desplegar
+
+##### 1. Preparar el Repositorio
+1. Sube todos los archivos del proyecto a tu repositorio de GitHub
+2. Asegúrate de que el archivo `README.md` contenga el encabezado YAML con la configuración de Hugging Face
+
+##### 2. Crear el Space en Hugging Face
+1. Ve a [Hugging Face Spaces](https://huggingface.co/spaces)
+2. Haz clic en "Create new Space"
+3. Completa la información:
+   - **Space name**: `buscador-inteligente-salud`
+   - **License**: MIT
+   - **SDK**: Streamlit
+   - **Hardware**: CPU basic (gratuito)
+
+##### 3. Configurar Variables de Entorno (Secrets)
+En la configuración del Space, agrega las siguientes variables secretas:
+
+```
+OPENAI_API_KEY = "tu_openai_api_key_aqui"
+HF_TOKEN = "tu_huggingface_token_aqui"
+```
+
+##### 4. Subir Archivos o Conectar GitHub
+Puedes elegir entre:
+- **Opción A**: Subir archivos directamente al repositorio del Space
+- **Opción B**: Conectar tu repositorio de GitHub existente
+
+##### 5. Verificar Archivos Necesarios
+Asegúrate de que estos archivos estén presentes:
+
+```
+├── app.py                    # ✅ Archivo principal
+├── requirements.txt          # ✅ Dependencias
+├── README.md                # ✅ Con encabezado YAML
+├── packages.txt             # ✅ Paquetes del sistema
+├── setup.sh                # ✅ Script de configuración
+├── .streamlit/
+│   ├── config.toml          # ✅ Configuración de Streamlit
+│   └── secrets.toml.example # ✅ Template para secretos
+├── functions/               # ✅ Funciones del proyecto
+├── utils/                   # ✅ Utilidades
+└── datasets/               # ✅ Datos (opcional)
+```
+
+#### ⚙️ Configuración Automática
+
+El proyecto incluye configuración automática para:
+- **Puerto**: 7860 (estándar de Hugging Face)
+- **Modelo spaCy**: Descarga automática de `es_core_news_sm`
+- **Variables de entorno**: Manejo automático de tokens
+- **Dependencias**: Instalación automática desde `requirements.txt`
+
+#### 🔧 Resolución de Problemas Específicos de HF
+
+##### Error de Modelo spaCy
+Si hay problemas con el modelo de spaCy:
+```bash
+python -m spacy download es_core_news_sm
+```
+
+##### Error de Variables de Entorno
+Verifica que las variables secretas estén configuradas correctamente en:
+`Settings > Variables and secrets`
+
+##### Error de Memoria
+Si el espacio se queda sin memoria:
+- Considera usar hardware con más RAM
+- Optimiza el código para usar menos memoria
+
+#### 🎯 URL del Space
+Una vez desplegado, tu aplicación estará disponible en:
+```
+https://huggingface.co/spaces/tu-usuario/buscador-inteligente-salud
+```
+
+#### � Notas Importantes para Hugging Face
+- El primer despliegue puede tardar varios minutos
+- Hugging Face Spaces reinicia automáticamente si hay cambios
+- Los logs están disponibles en la pestaña "Logs" del Space
+- La aplicación se suspende después de inactividad y se reactiva automáticamente
 
 ## 🎮 Uso de la Aplicación
 
