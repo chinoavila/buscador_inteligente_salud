@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  buscador-salud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: buscador_inteligente_salud
+    ports:
+      - "${STREAMLIT_PORT}:8501"
+    volumes:
+      # Montar el directorio de datasets para persistir datos
+      - ./datasets:/app/datasets
+      # Montar directorio de logs si se necesita
+      - ./logs:/app/logs
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+      # Agregar variables de entorno
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    restart: unless-stopped
+    networks:
+      - docker-network
+
+networks:
+  docker-network:
+    driver: bridge
+
+volumes:
+  app-data:
+    driver: local

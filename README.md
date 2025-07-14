@@ -15,10 +15,14 @@ Una aplicación web desarrollada en Streamlit que utiliza inteligencia artificia
 ## 🗂️ Estructura del Proyecto
 
 ```
-ENTREGA/
+buscador_inteligente_salud/
 ├── app.py                    # Aplicación principal de Streamlit
 ├── requirements.txt          # Dependencias del proyecto
 ├── README.md                # Documentación del proyecto
+├── Dockerfile               # Configuración para contenedor Docker
+├── docker-compose.yml       # Orquestación de servicios Docker
+├── .dockerignore           # Archivos excluidos del contexto Docker
+├── .env.example            # Template de variables de entorno
 ├── comandos_instalacion.txt  # Comandos de instalación rápida
 ├── env/                     # Entorno virtual de Python
 ├── functions/               # Módulos de funcionalidades
@@ -39,14 +43,16 @@ ENTREGA/
 
 - Python 3.8 o superior
 - Cuenta de OpenAI con API Key activa
+- Cuenta de Hugging Face con Access Token activo
 - Micrófono funcional en el sistema
+- Docker y Docker Compose (para despliegue con contenedores)
 
-### Instalación Paso a Paso
+### Opción 1: Instalación Local (Desarrollo)
 
 1. **Clona el repositorio** (o descarga los archivos):
    ```bash
-   git clone <repository-url>
-   cd ENTREGA
+   git clone https://github.com/chinoavila/buscador_inteligente_salud
+   cd buscador_inteligente_salud
    ```
 
 2. **Crea un entorno virtual**:
@@ -73,12 +79,73 @@ ENTREGA/
    ```
    OPENAI_API_KEY=tu_api_key_aqui
    HF_TOKEN=tu_access_token_aqui
+   STREAMLIT_PORT=8501
    ```
 
 6. **Ejecuta la aplicación**:
    ```bash
    streamlit run app.py
    ```
+
+### Opción 2: Despliegue con Docker (Recomendado para Producción)
+
+#### Configuración
+
+1. **Variables de entorno (opcional):**
+   ```bash
+   cp .env.example .env
+   ```
+   Edita el archivo `.env` y configura las variables necesarias.
+
+#### Usando Docker Compose (Recomendado)
+
+```bash
+# Construir y ejecutar
+docker-compose up --build
+
+# Ejecutar en segundo plano
+docker-compose up -d --build
+
+# Ver logs
+docker-compose logs -f
+
+# Detener
+docker-compose down
+```
+
+#### Usando Docker directamente
+
+```bash
+# Construir la imagen
+docker build -t buscador_inteligente_salud .
+
+# Ejecutar el contenedor
+docker run -p 8501:8501 \
+  -v $(pwd)/datasets:/app/datasets \
+  -e OPENAI_API_KEY=tu_api_key \
+  -e HF_TOKEN=tu_token_de_hugging_face \
+  buscador_inteligente_salud
+```
+
+#### Comandos útiles para Docker
+
+```bash
+# Ver contenedores ejecutándose
+docker ps
+
+# Acceder al shell del contenedor
+docker exec -it buscador_inteligente_salud bash
+
+# Ver logs en tiempo real
+docker-compose logs -f buscador_inteligente_salud
+
+# Reconstruir después de cambios
+docker-compose up --build
+
+# Limpiar todo (contenedores, imágenes, volúmenes)
+docker-compose down -v
+docker system prune -a
+```
 
 ## 🎮 Uso de la Aplicación
 
@@ -120,7 +187,8 @@ ENTREGA/
 Crea un archivo `.env` con las siguientes variables:
 ```
 OPENAI_API_KEY=tu_api_key_de_openai
-HF_TOKEN=tu_token_de_hugging_face (opcional)
+HF_TOKEN=tu_token_de_hugging_face
+STREAMLIT_PORT=8501
 ```
 
 ## 🚨 Resolución de Problemas
@@ -131,6 +199,39 @@ HF_TOKEN=tu_token_de_hugging_face (opcional)
 2. **Error de modelo spaCy**: Ejecuta `python -m spacy download es_core_news_sm`
 3. **Error de micrófono**: Verifica que tu navegador tenga permisos de micrófono
 4. **Error de dependencias**: Reinstala con `pip install -r requirements.txt --upgrade`
+
+### Problemas específicos de Docker
+
+#### Error de permisos (Linux/Mac)
+```bash
+# Asegurar permisos correctos
+sudo chown -R $USER:$USER datasets/
+```
+
+#### Reconstruir imagen completamente
+```bash
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
+```
+
+#### Ver logs detallados
+```bash
+docker-compose logs --tail=100 buscador_inteligente_salud
+```
+
+### Archivos Docker incluidos
+
+- `Dockerfile`: Define la imagen del contenedor
+- `docker-compose.yml`: Orquesta los servicios
+- `.dockerignore`: Archivos a excluir del contexto de build
+- `.env.example`: Template de variables de entorno
+
+### Volúmenes persistentes
+
+El archivo `docker-compose.yml` está configurado para persistir:
+- `/datasets`: Archivos de datos
+- `/logs`: Archivos de log (si se crean)
 
 ## 📄 Licencia
 
