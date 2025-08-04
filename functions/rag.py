@@ -1,4 +1,4 @@
-from utils.rag_utils import query_contacts_with_langchain, with_status_message
+from utils import query_contacts_with_langchain, with_status_message
 
 def consultar_rag(text):
     """

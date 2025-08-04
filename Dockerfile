@@ -29,6 +29,13 @@ COPY . .
 # Crear directorio para datos si no existe
 RUN mkdir -p datasets
 
+# Crear directorio para caché de modelos
+RUN mkdir -p models_cache
+
+# Variables de entorno para optimizar transformers
+ENV TRANSFORMERS_CACHE=/app/models_cache/transformers
+ENV HF_HOME=/app/models_cache/huggingface
+
 # Exponer puerto 8501 (puerto por defecto de Streamlit)
 EXPOSE 8501
 

@@ -5,22 +5,25 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
+from langchain.prompts import PromptTemplate
 import os
 
 # Cargar variables de entorno
 dotenv.load_dotenv()
 
 # Configuración global
-EXCEL_PATH = "datasets/INSTITUCIONES_ACLISA_JULIO.xlsx"
+EXCEL_PATH = "datasets/dataset_ejemplo.xlsx"
+EMBEDDING_MODEL = "text-embedding-3-large"
 CHROMA_DB_PATH = "./chroma_db"
 
 class RAGProcessor:
     """ Clase para manejar el procesamiento RAG con ChromaDB """
-    def __init__(self, persist_directory="./chroma_db", chunk_size=1000, chunk_overlap=100):
+    def __init__(self, persist_directory, chunk_size=1000, chunk_overlap=100):
         """ Inicializar el procesador RAG """
         self.persist_directory = persist_directory
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.embedding_model = EMBEDDING_MODEL
         self.embeddings = None
         self.vectorstore = None
         self.retriever = None
@@ -59,10 +62,10 @@ class RAGProcessor:
         )
         return text_splitter.split_documents(documents)
     
-    def create_vectorstore(self, chunks, embedding_model="text-embedding-3-large"):
+    def create_vectorstore(self, chunks):
         """ Crear vectorstore con ChromaDB """
         try:
-            self.embeddings = OpenAIEmbeddings(model=embedding_model)
+            self.embeddings = OpenAIEmbeddings(model=self.embedding_model)
             self.vectorstore = Chroma.from_documents(
                 documents=chunks,
                 embedding=self.embeddings,
@@ -72,12 +75,12 @@ class RAGProcessor:
         except Exception as e:
             raise Exception(f"Error creando vectorstore: {str(e)}")
     
-    def load_existing_vectorstore(self, embedding_model="text-embedding-3-large"):
+    def load_existing_vectorstore(self):
         """ Cargar un vectorstore existente desde disco """
         try:
             if not os.path.exists(self.persist_directory):
                 raise Exception(f"No existe el directorio {self.persist_directory}")  
-            self.embeddings = OpenAIEmbeddings(model=embedding_model)
+            self.embeddings = OpenAIEmbeddings(model=self.embedding_model)
             self.vectorstore = Chroma(
                 persist_directory=self.persist_directory,
                 embedding_function=self.embeddings
@@ -89,22 +92,44 @@ class RAGProcessor:
     def create_retriever(self, search_kwargs=None):
         """ Crear retriever a partir del vectorstore """
         if self.vectorstore is None:
-            raise Exception("Vectorstore no inicializado. Llame a create_vectorstore() primero.")
+            raise Exception("Vectorstore no inicializado.")
         if search_kwargs is None:
             search_kwargs = {"k": 4}  # Retorna los 4 documentos más relevantes   
         self.retriever = self.vectorstore.as_retriever(search_kwargs=search_kwargs)
         return self.retriever
     
-    def create_qa_chain(self, llm_model_name="gpt-3.5-turbo", temperature=0):
+    def create_qa_chain(self, temperature=0):
         """ Crear cadena de QA con recuperación """
         if self.retriever is None:
-            raise Exception("Retriever no inicializado. Llame a create_retriever() primero.") 
+            raise Exception("Retriever no inicializado.") 
         try:
-            llm_model = ChatOpenAI(model=llm_model_name, temperature=temperature)
+            llm_model = ChatOpenAI(model="gpt-3.5-turbo", temperature=temperature)
+            
+            # Prompt personalizado para búsqueda de profesionales de salud
+            custom_prompt = PromptTemplate(
+                template="""Eres un asistente especializado en búsqueda de profesionales de salud.
+                Basándote en la siguiente información de contactos de profesionales:
+
+                {context}
+
+                Pregunta: {question}
+
+                Instrucciones:
+                1. Busca profesionales cuyas especialidades coincidan con las solicitadas
+                2. Presenta la información de manera clara y organizada
+                3. Incluye nombre, especialidad, teléfono y dirección cuando esté disponible
+                4. Si no encuentras información específica, indica qué especialidades no se encontraron
+                5. No inventes información que no esté en los documentos
+
+                Respuesta:""",
+                input_variables=["context", "question"]
+            )
+            
             self.qa_chain = RetrievalQA.from_chain_type(
                 llm=llm_model,
                 retriever=self.retriever,
-                return_source_documents=True
+                return_source_documents=True,
+                chain_type_kwargs={"prompt": custom_prompt}
             )
             return self.qa_chain
         except Exception as e:
@@ -113,7 +138,7 @@ class RAGProcessor:
     def query(self, question):
         """ Realizar consulta al sistema RAG """
         if self.qa_chain is None:
-            raise Exception("Cadena QA no inicializada. Llame a create_qa_chain() primero.")
+            raise Exception("Cadena QA no inicializada.")
         try:
             result = self.qa_chain({"query": question})
             return {
@@ -124,7 +149,7 @@ class RAGProcessor:
             raise Exception(f"Error en consulta RAG: {str(e)}")
 
 
-def setup_rag_from_excel(excel_path, persist_directory="./chroma_db", force_reload=False):
+def setup_rag_from_excel(excel_path, persist_directory, force_reload=False):
     """ Función utilitaria para configurar RAG desde archivo Excel """
     processor = RAGProcessor(persist_directory=persist_directory)
     # Verificar si ya existe un vectorstore y no se fuerza la recarga
@@ -150,15 +175,24 @@ def setup_rag_from_excel(excel_path, persist_directory="./chroma_db", force_relo
 rag_processor = setup_rag_from_excel(
             excel_path=EXCEL_PATH,
             persist_directory=CHROMA_DB_PATH,
-            force_reload=None
+            force_reload=False
         )
 
-def query_contacts_with_langchain(input_text, excel_path="datasets/INSTITUCIONES_ACLISA_JULIO.xlsx"):
+def query_contacts_with_langchain(input_text):
     """ Función específica para consultar profesionales por especialidades """
     try:
-        query = f'''Dame una lista de contactos de todos los profesionales
-                    cuyas especialidades se encuentren en este JSON: {input_text}.
-                    Por favor incluye nombre, especialidad, teléfono y dirección cuando esté disponible.'''
+        # Mejorar la consulta para ser más específica
+        query = f"""Busca profesionales de salud con las siguientes especialidades: {input_text}
+        
+        Proporciona una lista estructurada de contactos que incluya:
+        - Nombre del profesional o institución
+        - Especialidad médica
+        - Número de teléfono
+        - Dirección o ubicación
+        - Cualquier información adicional de contacto disponible
+        
+        Organiza la información de manera clara y legible."""
+        
         result = rag_processor.query(query)
         return result["answer"]
     except Exception as e:

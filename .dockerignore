@@ -29,6 +29,9 @@ Thumbs.db
 *.log
 logs/
 
+# Modelos pre-entrenados (demasiado grandes para incluir en el contexto)
+models_cache/
+
 # Archivos temporales
 *.tmp
 *.temp

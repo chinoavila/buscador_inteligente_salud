@@ -11,5 +11,9 @@ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_s
 pandas>=1.5.0,<3.0.0
 numpy>=1.24.0,<2.0.0
 openpyxl>=3.1.0
-pydantic>=1.10.0,<2.0.0
+pydantic>=2.0.0
 typing-extensions>=4.8.0
+langchain==0.3.27
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+chromadb>=0.4.0
