@@ -11,8 +11,6 @@ services:
     volumes:
       # Montar el directorio de datasets para persistir datos
       - ./datasets:/app/datasets
-      # Montar directorio de logs si se necesita
-      - ./logs:/app/logs
     environment:
       - STREAMLIT_SERVER_HEADLESS=true
       - STREAMLIT_SERVER_ENABLE_CORS=false
@@ -27,7 +25,3 @@ services:
 networks:
   docker-network:
     driver: bridge
-
-volumes:
-  app-data:
-    driver: local

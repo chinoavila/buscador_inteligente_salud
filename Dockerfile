@@ -1,5 +1,5 @@
 # Usar imagen base de Python 3.10
-FROM python:3.10-slim
+FROM python:3.10
 
 # Establecer el directorio de trabajo
 WORKDIR /app
@@ -22,9 +22,6 @@ COPY requirements.txt .
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Descargar el modelo de spaCy en español
-RUN python -m spacy download es_core_news_sm
 
 # Copiar el código de la aplicación
 COPY . .

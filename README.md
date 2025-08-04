@@ -266,7 +266,7 @@ https://huggingface.co/spaces/tu-usuario/buscador-inteligente-salud
 
 - `streamlit>=1.28.0` - Framework web para la interfaz
 - `audio-recorder-streamlit==0.0.10` - Componente de grabación de audio
-- `openai==0.28` - API de OpenAI para transcripción
+- `openai>=1.0.0` - API de OpenAI para transcripción
 - `transformers==4.46.3` - Modelos de Hugging Face
 - `torch==2.7.1` - Framework de machine learning
 - `spacy==3.8.7` - Procesamiento de lenguaje natural

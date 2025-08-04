@@ -2,6 +2,8 @@ import dotenv
 import os
 from huggingface_hub import login
 from transformers import AutoTokenizer, AutoModelForCausalLM, StoppingCriteria, StoppingCriteriaList, GenerationConfig
+import streamlit as st
+import json
 
 # tomar Access Token de Hugging Face desde archivo .env
 dotenv.load_dotenv() 
@@ -25,43 +27,64 @@ class ListOfTokensStoppingCriteria(StoppingCriteria):
                     return True
         return False
 
-# Modelos probados:
-# https://huggingface.co/medicalai/ClinicalBERT
-# https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT
-# https://huggingface.co/medalpaca/medalpaca-7b
-# https://huggingface.co/qanastek/MedAlpaca-LLaMa2-7B
-# https://huggingface.co/siddharthtumre/biobert-finetuned-ner
-# https://huggingface.co/somosnlp/Sam_Diagnostic
+@st.cache_resource
+def load_model():
+    """Carga los recursos de Hugging Face"""
+    # Modelos probados:
+    # https://huggingface.co/medicalai/ClinicalBERT
+    # https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT
+    # https://huggingface.co/medalpaca/medalpaca-7b
+    # https://huggingface.co/qanastek/MedAlpaca-LLaMa2-7B
+    # https://huggingface.co/siddharthtumre/biobert-finetuned-ner
+    # https://huggingface.co/somosnlp/Sam_Diagnostic
 
-model_id = "somosnlp/Sam_Diagnostic"
+    model_id = "somosnlp/Sam_Diagnostic"
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, max_length = 2048)
-stopping_criteria = ListOfTokensStoppingCriteria(tokenizer, ["<end_of_turn>"])
-stopping_criteria_list = StoppingCriteriaList([stopping_criteria])
+    tokenizer = AutoTokenizer.from_pretrained(model_id, max_length = 2048)
+    stopping_criteria = ListOfTokensStoppingCriteria(tokenizer, ["<end_of_turn>"])
+    stopping_criteria_list = StoppingCriteriaList([stopping_criteria])
 
-model = AutoModelForCausalLM.from_pretrained(model_id,
-                                            attn_implementation = None,
-                                            ).eval()
+    model = AutoModelForCausalLM.from_pretrained(model_id,
+                                                attn_implementation = None
+                                                ).eval()
 
-generation_config = GenerationConfig(
-    max_new_tokens=2100,
-    temperature=0.2,
-    #top_p=0.9,
-    top_k=50,
-    repetition_penalty=1.,
-    do_sample=True,
-)
+    generation_config = GenerationConfig(
+        max_new_tokens=2100,
+        temperature=0.2,
+        top_p=0.1, # reducir variabilidad
+        top_k=50,
+        repetition_penalty=1.,
+        do_sample=True,
+    )
+    return tokenizer, model, generation_config, stopping_criteria, stopping_criteria_list
+
+tokenizer, model, generation_config, stopping_criteria, stopping_criteria_list = load_model()
 
 def cut_model_response(response_text):
     response_text = response_text.split("<start_of_turn>model")[1]
     final = response_text.find("<end_of_turn>")
     return response_text[:final]
 
-def generate_with_hugging_face(input_text):
+def generate_with_hugging_face(prompt, input_lang_code, output_lang_code):
+    # Fine-tunning
+    input_text = f'''<bos>
+    <start_of_turn>system
+    You are a helpful AI assistant.
+    Responde en formato JSON.
+    Eres un agente experto en medicina.
+    Lista de codigos linguisticos disponibles: ["{input_lang_code}", "{output_lang_code}"]
+    <end_of_turn>
+    <start_of_turn>user {prompt}<end_of_turn>
+    <start_of_turn>model
+    '''
+    # Tokenizacion
     inputs = tokenizer.encode(input_text, return_tensors="pt", add_special_tokens=False)
+    # Salidas codificadas
     outputs = model.generate(
         generation_config=generation_config,
         input_ids=inputs,
         stopping_criteria=stopping_criteria_list,)
+    # Decodificacion
     response = tokenizer.decode(outputs[0], skip_special_tokens=False)
+    # Formateo de respuesta
     return cut_model_response(response)

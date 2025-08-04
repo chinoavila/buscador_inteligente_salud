@@ -2,10 +2,11 @@ import os
 import sys
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
-from utils import (
+from utils import show_instructions
+from functions import (
     transcribir_con_status,
     detectar_entidades_con_status,
-    show_instructions
+    consultar_rag_con_status
 )
 
 # Configuración específica para Hugging Face Spaces
@@ -50,8 +51,13 @@ def main():
             entidades_medicas = detectar_entidades_con_status(transcripcion)
 
             if entidades_medicas:
-                st.header("Entidades médicas detectadas:")
-                st.write(entidades_medicas)
+                ## Consulta con RAG
+                respuesta_rag = consultar_rag_con_status(entidades_medicas)
+                if respuesta_rag:
+                    st.header("Resultados:")
+                    st.write(transcripcion)
+                else:
+                    st.error("No se pudieron detectar profesionales para la consulta realizada.")    
             else:
                 st.error("No fue posible identificar entidades médicas.")
 

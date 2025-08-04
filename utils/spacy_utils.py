@@ -1,14 +1,22 @@
 import spacy
+import streamlit as st
 
-# Cargar modelo NER de spaCy en español
-ner_nlp = spacy.load("es_core_news_sm")
+@st.cache_resource
+def load_model():
+    """Cargar modelo NER de scispacy"""
+    model = spacy.load("en_core_sci_sm")
+    return model
+
+ner_nlp = load_model()
 
 def extract_entities_with_spacy(input_text):
+    """Extrae entidades con información detallada"""
     doc = ner_nlp(input_text)
-    entidades = [(entity.text, entity.label_) for entity in doc.ents]
-    if entidades:
-        if len(entidades):
-            respuesta = " ".join(entidades)
-    else: 
+    entidades = ""
+    for entity in doc.ents:
+        entidades += entity.text + ", "
+    if entidades == "":
         respuesta = "No se detectaron síntomas claros."
+    else:
+        respuesta = entidades[:-2]
     return respuesta

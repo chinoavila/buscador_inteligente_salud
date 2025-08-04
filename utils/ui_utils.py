@@ -1,6 +1,5 @@
 import streamlit as st
 from functools import wraps
-from functions import transcribir_audio, detectar_entidades_medicas
 
 def with_status_message(message):
     """
@@ -18,14 +17,6 @@ def with_status_message(message):
             return result
         return wrapper
     return decorator
-
-@with_status_message("Transcribiendo audio...")
-def transcribir_con_status(audio_bytes):
-    return transcribir_audio(audio_bytes)
-
-@with_status_message("Detectando entidades médicas...")
-def detectar_entidades_con_status(transcripcion):
-    return detectar_entidades_medicas(transcripcion)
 
 @st.dialog("Instrucciones")
 def show_instructions(max_segundos):
