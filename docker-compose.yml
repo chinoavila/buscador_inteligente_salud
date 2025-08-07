@@ -11,9 +11,10 @@ services:
     volumes:
       # Montar el directorio de datasets para persistir datos
       - ./datasets:/app/datasets
-      # Montar caché de modelos para acelerar el despliegue
-      - ./models_cache:/app/models_cache
     environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
       # Agregar variables de entorno
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - HF_TOKEN=${HF_TOKEN}

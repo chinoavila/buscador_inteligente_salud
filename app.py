@@ -52,6 +52,7 @@ def main():
 
             if entidades_medicas:
                 ## Consulta con RAG
+                print(entidades_medicas)
                 respuesta_rag = consultar_rag_con_status(entidades_medicas)
                 if respuesta_rag:
                     st.header("Contactos de Profesionales Encontrados:")
