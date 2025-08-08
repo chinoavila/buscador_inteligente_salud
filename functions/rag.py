@@ -11,6 +11,6 @@ def consultar_rag(text):
     except Exception as e:
         return f"Error en consulta RAG: {str(e)}"
     
-@with_status_message("Consultando contactos de profesionales...")
+@with_status_message("Buscando contactos de prestadores...")
 def consultar_rag_con_status(entidades_medicas):
     return consultar_rag(entidades_medicas)

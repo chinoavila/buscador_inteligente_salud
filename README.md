@@ -1,9 +1,9 @@
-# 🏥 Buscador Inteligente de Profesionales de Salud
+# 🏥 Buscador Inteligente de Prestadores de Salud
 
 ## 📋 Descripción del Proyecto
 
 ### El Problema
-En Argentina, existe una gran fragmentación en el sistema de salud que dificulta a los ciudadanos encontrar la atención médica apropiada. Los pacientes a menudo no saben qué especialidad médica necesitan según sus síntomas, y la búsqueda de profesionales adecuados puede ser compleja y consume tiempo valioso, ya sea por recorridos presenciales visitando cada establecimiento, o una busqueda en internet. Estas últimas, pueden realizarse mediante buscadores básicos y populares como Google o mediante los sitios oficiales de instituciones de salud, lo cual obliga al usuario a tener que comprender sus interfaces antes de poder utilizarlos de manera fluída.
+En Argentina, existe una gran fragmentación en el sistema de salud que dificulta a los ciudadanos encontrar la atención médica apropiada. Los pacientes a menudo no saben qué especialidad médica necesitan según sus síntomas, y la búsqueda de prestadores adecuados puede ser compleja y consume tiempo valioso, ya sea por recorridos presenciales visitando cada establecimiento, o una busqueda en internet. Estas últimas, pueden realizarse mediante buscadores básicos y populares como Google o mediante los sitios oficiales de instituciones de salud, lo cual obliga al usuario a tener que comprender sus interfaces antes de poder utilizarlos de manera fluída.
 
 ### La Solución Propuesta
 Se desarrolló una aplicación web que utiliza **Inteligencia Artificial** para:
@@ -12,7 +12,7 @@ Se desarrolló una aplicación web que utiliza **Inteligencia Artificial** para:
 - **Buscar historias clínicas relacionadas** para identificar casos similares utilizando un modelo de lenguaje especializado en biomédicina
 - **Extraer entidades médicas** (síntomas, condiciones, partes del cuerpo) del texto
 - **Recomendar especialidades médicas** apropiadas basadas en el análisis con recuperación aumentada
-- **Recopilar datos de contactos** de profesionales y establecimientos de salud públicos y privados
+- **Recopilar datos de contactos** de prestadores, ya sean profesionales o instituciones de salud tanto del sector público como privado
 
 ### Tecnologías Implementadas
 - **Frontend**: Streamlit para interfaz web responsiva

@@ -1,3 +1,12 @@
+import warnings
+# Silenciar FutureWarning específico de spaCy antes de cualquier import que pueda cargar spaCy
+warnings.filterwarnings(
+    "ignore",
+    message=".*Possible set union.*",
+    category=FutureWarning,
+    module="spacy"
+)
+
 import os
 import sys
 import streamlit as st
@@ -27,7 +36,7 @@ def main():
     if st.button("Ayuda"):
         show_instructions(MAX_SEGUNDOS)
 
-    st.title("Buscador Inteligente de Profesionales de Salud")
+    st.title("Buscador Inteligente de Prestadores de Salud")
 
     audio_bytes = audio_recorder(
             text="",
@@ -42,26 +51,21 @@ def main():
     if audio_bytes:
         # Transcripción de audio
         transcripcion = transcribir_con_status(audio_bytes)
-
         if transcripcion:
             st.header("Transcripción:")
             st.write(transcripcion)
-
             ## Extracción de entidades médicas
             entidades_medicas = detectar_entidades_con_status(transcripcion)
-
             if entidades_medicas:
                 ## Consulta con RAG
-                print(entidades_medicas)
                 respuesta_rag = consultar_rag_con_status(entidades_medicas)
                 if respuesta_rag:
-                    st.header("Contactos de Profesionales Encontrados:")
+                    st.header("Contactos Encontrados:")
                     st.markdown(respuesta_rag)
                 else:
-                    st.error("No se pudieron encontrar profesionales para las especialidades consultadas.")    
+                    st.error("No se pudieron encontrar prestadores para las especialidades consultadas.")    
             else:
                 st.error("No fue posible identificar entidades médicas en la transcripción.")
-
         else:
             st.error("No se pudo transcribir el audio.")
 

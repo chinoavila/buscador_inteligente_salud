@@ -9,15 +9,25 @@ services:
     ports:
       - "${STREAMLIT_PORT}:8501"
     volumes:
-      # Montar el directorio de datasets para persistir datos
-      - ./datasets:/app/datasets
+      - ./datasets:/app/datasets:ro
+      - ./chroma_db:/app/chroma_db
     environment:
-      - STREAMLIT_SERVER_HEADLESS=true
-      - STREAMLIT_SERVER_ENABLE_CORS=false
-      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
-      # Agregar variables de entorno
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - HF_TOKEN=${HF_TOKEN}
+      - HF_ENDPOINT_URL=${HF_ENDPOINT_URL}
+      # Desactivar telemetría de Chroma/Posthog en runtime
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_TELEMETRY_ANONYMIZED=False
+      - CHROMA_TELEMETRY_ENABLED=False
+      - CHROMA_TELEMETRY_IMPLEMENTATION=noop
+      - CHROMA_DISABLE_TELEMETRY=true
+      - POSTHOG_DISABLED=true
+      - DO_NOT_TRACK=1
+      # DEBUG
+      - RAG_LOG_COUNTS=1
+      #- RAG_FORCE_RELOAD=1 # solo para forzar reindexado
+      - RAG_TOP_K=8
+      - RAG_SCORE_THRESHOLD=0.4
     restart: unless-stopped
     networks:
       - docker-network

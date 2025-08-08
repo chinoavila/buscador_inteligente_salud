@@ -7,4 +7,4 @@ __pycache__/
 .env
 config.ini
 *.xlsx
-docs/
+chroma_db/

@@ -40,6 +40,7 @@ logs/
 # Documentación
 *.md
 !README.md
+docs/
 
 # Archivos de desarrollo
 .pytest_cache/
