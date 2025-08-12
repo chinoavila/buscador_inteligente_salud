@@ -1,0 +1,10 @@
+venv/
+env/
+.venv/
+.env/
+*.pyc
+__pycache__/
+.env
+config.ini
+*.xlsx
+chroma_db/

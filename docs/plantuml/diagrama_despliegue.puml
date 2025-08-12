@@ -1,0 +1,52 @@
+@startuml
+title Diagrama de Despliegue - Buscador Inteligente de Prestadores de Salud
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+
+' Estilos por tags para legibilidad
+AddElementTag("app")
+UpdateElementStyle("app", $bgColor="#76a2ccff", $borderColor="#4682B4")
+AddElementTag("storage")
+UpdateElementStyle("storage", $bgColor="#cc8dd6ff", $borderColor="#7B1FA2")
+AddElementTag("external")
+UpdateElementStyle("external", $bgColor="#b99a67ff", $borderColor="#EF6C00")
+AddElementTag("model")
+UpdateElementStyle("model", $bgColor="#5fa865ff", $borderColor="#2E7D32")
+
+Person(usuario, "Usuario", "Persona que busca prestadores de salud usando voz o texto")
+
+Deployment_Node(docker_host, "Host Docker", "Windows/Linux", "Equipo local o servidor") {
+    Deployment_Node(compose_net, "Docker network: docker-network", "bridge", "Red definida en docker-compose.yml") {
+        Deployment_Node(app_modules, "Aplicación Streamlit", "Código Python") {
+            Container(ui_app, "UI Streamlit", "app.py + ui/accessibility", "Interfaz principal (puerto 8501)", "", "app")
+            Container(orchestrator_module, "HealthOrchestrator", "application/orchestration.py", "Coordina transcripción, extracción y RAG", "", "app")
+            Container(utils_layer, "Integraciones y RAG", "utils/*", "whisper_utils, hf_utils, spacy_utils, rag_utils", "", "app")
+        }
+
+        Deployment_Node(storage_boundary, "Almacenamiento local", "Volúmenes (host)") {
+            ContainerDb(datasets_storage, "Datasets (Excel)", "Directorio ./datasets", "Volumen RO montado en /app/datasets", "", "storage")
+            ContainerDb(chroma_storage, "ChromaDB (persistencia)", "Directorio ./chroma_db", "Volumen RW montado en /app/chroma_db", "", "storage")
+        }
+    }
+}
+
+Deployment_Node(api_services, "Servicios Externos", "APIs en la nube") {
+    Container(openai_api, "OpenAI API", "HTTPS", "Whisper-1 (audio) y Embeddings/Chat", "", "external")    
+    Container(hf_endpoint, "HF Inference Endpoint", "HTTPS (opcional)", "Usado si HF_ENDPOINT_URL está definido", "", "external")
+}
+
+' Relaciones principales y acceso
+Rel_R(usuario, ui_app, "HTTP → ${STREAMLIT_PORT}:8501", "Navegador web")
+Rel_D(ui_app, orchestrator_module, "Orquesta", "call")
+Rel_D(orchestrator_module, utils_layer, "Delegación técnica", "call")
+
+Rel_D(utils_layer, chroma_storage, "Persistencia de vectores", "Volumen RW")
+Rel_D(utils_layer, datasets_storage, "Lectura de dataset", "Volumen RO")
+Rel_D(utils_layer, openai_api, "Whisper + Embeddings/Chat", "HTTPS/REST")
+Rel_D(utils_layer, hf_endpoint, "Generación (opcional)", "HTTPS/REST")
+
+@enduml

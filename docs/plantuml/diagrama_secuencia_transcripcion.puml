@@ -1,0 +1,52 @@
+@startuml
+!theme plain
+
+skinparam BackgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontName Verdana
+skinparam NoteBackgroundColor #f8f9fa
+skinparam NoteBorderColor #999999
+skinparam Shadowing false
+skinparam SequenceLifeLineBorderColor black
+skinparam ParticipantPadding 12
+skinparam LifelineStrategy nosolid
+skinparam UseBetaStyle true
+
+title Diagrama de Secuencia: Transcripción de audio
+
+actor Usuario as user
+participant "UI Streamlit\n(app.py + application/ui.py)" as ui
+participant "HealthOrchestrator\n(application/orchestration.py)" as orch
+participant "Transcripción Function\n(functions/transcripcion.py)" as trans
+participant "Whisper Utils\n(utils/whisper_utils.py)" as whisper
+participant "OpenAI API\n(Whisper-1)" as openai
+
+== Inicio ==
+user -> ui : Grabar audio
+ui -> ui : audio_recorder_streamlit\ncaptura audio_bytes
+ui -> orch : transcribe_audio(audio_bytes)
+orch -> trans : transcribir_con_status(audio_bytes)
+activate trans
+note right of trans
+  with_status_message("Transcribiendo audio...")
+end note
+
+trans -> whisper : transcribe_audio_with_whisper(audio_bytes)
+whisper -> openai : audio.transcriptions.create\nmodel="whisper-1", file=audio.wav
+openai --> whisper : transcript.text
+whisper --> trans : texto transcrito
+trans --> orch : transcription [string]
+deactivate trans
+
+alt ¿Transcripción exitosa?
+  orch -> ui : Mostrar transcripción
+  note right of ui
+    Se muestra también en process_audio_symptoms\n    antes de seguir con extracción y RAG
+  end note
+else
+  orch -> ui : Error: No se pudo transcribir el audio\n"Verifica tu micrófono"
+end
+
+ui --> user : Feedback
+
+@enduml

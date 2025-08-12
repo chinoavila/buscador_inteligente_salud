@@ -1,0 +1,63 @@
+@startuml
+!theme plain
+
+skinparam BackgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontName Verdana
+skinparam NoteBackgroundColor #f8f9fa
+skinparam NoteBorderColor #999999
+skinparam Shadowing false
+skinparam SequenceLifeLineBorderColor black
+skinparam ParticipantPadding 12
+skinparam LifelineStrategy nosolid
+skinparam UseBetaStyle true
+
+title Diagrama de Secuencia: Extracción de entidades médicas
+
+actor Usuario as user
+participant "UI Streamlit\n(app.py + application/ui.py)" as ui
+participant "HealthOrchestrator\n(application/orchestration.py)" as orch
+participant "Extracción Function\n(functions/extraccion.py)" as extr
+participant "HF Utils\n(utils/hf_utils.py)" as hf
+participant "spaCy Utils\n(utils/spacy_utils.py)" as spacy
+participant "HF Inference Endpoint\n(opcional)" as hfe
+
+== Inicio ==
+user -> ui : Ingresar texto de síntomas
+ui -> orch : process_text_symptoms(texto)
+orch -> extr : detectar_entidades_con_status(texto)
+activate extr
+note right of extr
+  with_status_message("Detectando entidades médicas...")
+end note
+
+extr -> extr : detectar_entidades_medicas(texto)
+extr -> hf : generate_with_hugging_face(texto, "es", "en")
+alt HF_ENDPOINT_URL definido
+  hf -> hfe : POST /inference\ninputs: prompt formateado
+  hfe --> hf : generated_text (full)
+else Transformadores locales
+  hf -> hf : load_model() [cache]
+  hf -> hf : model.generate(...)
+end
+hf --> extr : busqueda_resultados (en)
+
+extr -> spacy : extract_entities_with_spacy(texto_en)
+spacy --> extr : entidades
+
+extr -> hf : generate_with_hugging_face(entidades, "en", "es")
+hf --> extr : clasificacion_resultados (es)
+
+alt Entidades detectadas
+  extr --> orch : entidades / clasificación
+  note right of ui
+    Si procede, continúa con RAG\n(functions/rag.py)
+  end note
+  deactivate extr
+else Sin entidades
+  orch -> ui : Error: No se pudieron identificar síntomas\n"Intenta ser más descriptivo"
+end
+
+ui --> user : Feedback (entidades o error)
+
+@enduml

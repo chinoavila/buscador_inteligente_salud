@@ -1,0 +1,53 @@
+# Entorno virtual
+env/
+venv/
+.venv/
+
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos de configuración local
+.env.local
+.env.*.local
+
+# Documentación
+*.md
+!README.md
+docs/
+
+# Archivos de desarrollo
+.pytest_cache/
+.coverage
+.nyc_output
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

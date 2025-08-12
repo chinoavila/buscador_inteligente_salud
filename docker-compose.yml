@@ -1,0 +1,22 @@
+services:
+  buscador-salud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: buscador_inteligente_salud
+    ports:
+      - "${STREAMLIT_PORT}:8501"
+    volumes:
+      - ./datasets:/app/datasets:ro
+      - ./chroma_db:/app/chroma_db:rw
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_ENDPOINT_URL=${HF_ENDPOINT_URL}
+    restart: unless-stopped
+    networks:
+      - docker-network
+
+networks:
+  docker-network:
+    driver: bridge

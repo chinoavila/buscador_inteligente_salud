@@ -1,0 +1,62 @@
+@startuml
+!theme plain
+
+skinparam BackgroundColor white
+skinparam ArrowColor black
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityFontName Verdana
+skinparam NoteBackgroundColor #f8f9fa
+skinparam NoteBorderColor #999999
+skinparam Shadowing false
+
+title Flujo de procesamiento de síntomas
+
+start
+
+:Usuario selecciona método de entrada;
+
+if (¿Entrada por texto?) then (sí)
+  :Usuario escribe síntomas;
+  :Validar longitud mínima;
+  if (¿Entrada válida?) then (sí)
+    :Texto listo para análisis;
+  else (no)
+    :Advertencia: descripción muy corta;
+    stop
+  endif
+else (no)
+  :Usuario graba audio; 
+  :Audio capturado por Streamlit;
+
+  :Transcripción con OpenAI Whisper;
+  if (¿Transcripción exitosa?) then (sí)
+    :Mostrar transcripción;
+    :Texto = transcripción;
+  else (no)
+    :Error: No se pudo transcribir el audio;
+    stop
+  endif
+endif
+
+:Extracción de entidades médicas;
+
+if (¿Entidades detectadas?) then (sí)
+  :Consulta RAG con entidades;
+
+  :Búsqueda vectorial en ChromaDB; 
+
+  :Generación de respuesta con OpenAI (Embeddings/Chat);
+  if (¿Se encontraron prestadores?) then (sí)
+    :Mostrar contactos profesionales;
+    stop
+  else (no)
+    :Sin resultados: intentar nueva búsqueda;
+    stop
+  endif
+else (no)
+  :Error: No se detectaron entidades;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,106 @@
+@startuml
+!theme plain
+
+skinparam BackgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontName Verdana
+skinparam NoteBackgroundColor #f8f9fa
+skinparam NoteBorderColor #999999
+skinparam Shadowing false
+skinparam SequenceLifeLineBorderColor black
+skinparam ParticipantPadding 12
+skinparam LifelineStrategy nosolid
+skinparam UseBetaStyle true
+
+title Diagrama de Secuencia: RAG (búsqueda local de prestadores)
+
+actor Usuario as user
+participant "UI Streamlit\n(app.py + application/ui.py)" as ui
+participant "HealthOrchestrator\n(application/orchestration.py)" as orch
+participant "RAG Function\n(functions/rag.py)" as ragfn
+participant "RAG Utils\n(utils/rag_utils.py)" as ragutils
+participant "SearchService\n(utils/rag_utils.py)" as service
+participant "RAGProcessor\n(utils/rag_utils.py)" as proc
+participant "VectorStoreManager\n(utils/rag_utils.py)" as vsm
+participant "DocumentLoader\n(utils/rag_utils.py)" as loader
+participant "PromptBuilder\n(utils/rag_utils.py)" as prompt
+participant "OpenAI API\n(Embeddings/Chat)" as openai
+database "ChromaDB\n(./chroma_db)" as chroma
+
+== Inicio ==
+user -> ui : Solicitar búsqueda de prestadores
+ui -> orch : process_*_symptoms(...)
+orch -> ragfn : consultar_rag_con_status(entidades/JSON)
+activate ragfn
+note right of ragfn
+  with_status_message("Buscando contactos de prestadores...")
+end note
+
+ragfn -> ragutils : query_contacts_with_langchain(query)
+activate ragutils
+ragutils -> service : get_health_service() [singleton]
+service -> service : __init__() si no existe
+service -> service : _initialize()
+service -> proc : setup_rag_from_excel(excel_path, persist_dir)
+activate proc
+
+alt Cargar índice existente
+  proc -> vsm : load_existing_vectorstore()
+  vsm -> chroma : conectar a colección
+  chroma --> vsm : handle vectorstore
+  vsm --> proc : vectorstore
+else Crear índice (primera vez/forzado)
+  proc -> loader : load_excel_documents(excel_path)
+  loader --> proc : documentos (LangChain Document)
+  proc -> proc : split_documents(chunks)
+  proc -> vsm : create_vectorstore(chunks)
+  vsm -> chroma : persistir / crear colección
+  chroma --> vsm : colección
+  vsm --> proc : vectorstore
+end
+
+proc -> proc : setup_retriever(k=DEFAULT_SEARCH_K)
+proc -> proc : setup_qa_chain(ChatOpenAI)
+proc --> service : listo
+
+' Búsqueda por especialidades
+service -> service : _extract_specialty_queries(query)
+loop por cada especialidad
+  service -> proc : retriever.invoke(query)
+  proc --> service : documentos relevantes
+end
+
+alt Hay documentos
+  service -> proc : query_with_specific_docs(query, docs)
+  proc -> prompt : get_search_prompt()
+  prompt --> proc : PromptTemplate
+  proc -> openai : ChatOpenAI.invoke(formatted_prompt)
+  openai --> proc : answer (texto)
+  proc --> service : { answer, source_documents }
+  service --> ragutils : answer (Markdown)
+  ragutils --> ragfn : respuesta lista
+  ragfn --> orch : recomendaciones (Markdown)
+  deactivate ragfn
+  orch -> ui : Mostrar contactos profesionales
+else Sin documentos relevantes
+  service -> service : _general_search()
+  alt Aún sin resultados
+    service --> ragutils : "No se encontraron resultados para esta búsqueda."
+    ragutils --> ragfn : mensaje sin resultados
+    ragfn --> orch : mensaje sin resultados
+    deactivate ragfn
+    orch -> ui : Mostrar aviso de sin resultados
+  else Con resultados
+    service -> proc : query_with_specific_docs(query, docs)
+    proc -> openai : ChatOpenAI.invoke(...)
+    openai --> proc : answer
+    proc --> service : answer
+    service --> ragutils : answer
+    ragutils --> ragfn : respuesta lista
+    ragfn --> orch : recomendaciones
+    deactivate ragfn
+    orch -> ui : Mostrar contactos profesionales
+  end
+end
+
+@enduml

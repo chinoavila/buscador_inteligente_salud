@@ -1,0 +1,163 @@
+@startuml
+!define RECTANGLE class
+
+title Diagrama de Arquitectura - Buscador Inteligente de Prestadores de Salud
+
+top to bottom direction
+skinparam linetype ortho
+
+skinparam packageTitleFontColor #2E8B57
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 80
+
+together {
+package "Application Layer" as AppLayer {
+    package "App (Streamlit)" as AppPkg {
+        RECTANGLE App {
+            +main()
+            +procesar_sintomas()
+            +procesar_audio()
+        }
+    }
+
+    package "UI Components" as UIPkg {
+        RECTANGLE UIComponents {
+            +show_instructions()
+            +create_text_input()
+            +create_audio_input()
+            +display_results()
+            +create_search_button()
+            +with_status_message()
+        }
+    }
+    
+    package "Accessibility" as AccPkg {
+        RECTANGLE AccessibilityComponents {
+            +create_accessible_button()
+            +create_progress_indicator()
+            +create_status_message()
+            +create_accessibility_settings()
+            +create_keyboard_shortcuts_help()
+        }
+    }
+    
+    package "Orchestration" as OrchPkg {
+        RECTANGLE HealthOrchestrator {
+            +transcribe_audio()
+            +process_text_symptoms()
+            +process_audio_symptoms()
+            +validate_input()
+            +get_processing_stats()
+        }
+    }
+}
+
+package "Config Layer" as ConfigLayer {
+    RECTANGLE AppConfig {
+        +APP_CONFIG
+        +HELP_MESSAGES
+        +STATUS_MESSAGES
+        +CUSTOM_CSS
+        +ACCESSIBILITY_CONFIG
+    }
+}
+
+}
+
+package "Functions Layer" as FunctionsLayer {
+    RECTANGLE Transcripcion {
+        +transcribir_con_status()
+    }
+    
+    RECTANGLE Extraccion {
+        +detectar_entidades_con_status()
+    }
+    
+    RECTANGLE RAG {
+        +consultar_rag_con_status()
+    }
+}
+
+package "Utils Layer" {
+    RECTANGLE HFUtils {
+        +generate_with_hugging_face()
+    }
+    
+    RECTANGLE SpacyUtils {
+        +extract_entities_with_spacy()
+    }
+    
+    RECTANGLE TranscripcionUtils {
+        +transcribe_audio_with_whisper()
+    }
+
+    package "RAG Utils" {
+        RECTANGLE RAGUtils {
+            +query_contacts_with_langchain()
+        }
+        RECTANGLE SearchService
+        RECTANGLE RAGProcessor
+        RECTANGLE VectorStoreManager
+        RECTANGLE DocumentLoader
+        RECTANGLE PromptBuilder
+    }
+}
+
+package "Data Layer" as DataLayer {
+    RECTANGLE "datasets/dataset_ejemplo.xlsx" as DatasetExcel
+    RECTANGLE "./chroma_db" as ChromaDB
+}
+
+package "External Services" as ExternalServices {
+    RECTANGLE OpenAI_API {
+        +Whisper
+        +Embeddings/Chat
+    }
+    RECTANGLE HuggingFace {
+        +Transformers Local
+        +Inference Endpoint
+    }
+    RECTANGLE "en_core_sci_sm" as SpaCy_Model
+}
+
+AppPkg -[hidden]down-> UIPkg
+AppPkg -[hidden]down-> OrchPkg
+AppPkg -[hidden]down-> AccPkg
+UIPkg -[hidden]right-> AccPkg
+AccPkg -[hidden]right-> OrchPkg
+
+App -down-> UIComponents : usa
+App -down-> HealthOrchestrator : instancia/llama
+App -down-> AppConfig : usa
+
+UIComponents -down-> AppConfig : usa
+AccessibilityComponents --> UIComponents : mejora
+
+HealthOrchestrator -down-> Transcripcion : coordina
+HealthOrchestrator -down-> Extraccion : coordina
+HealthOrchestrator -down-> RAG : coordina
+
+Transcripcion -down-> TranscripcionUtils : usa
+Extraccion -down-> SpacyUtils : usa
+Extraccion -down-> HFUtils : usa
+RAG -down-> RAGUtils : usa
+
+RAGUtils -down-> SearchService : delega
+SearchService -down-> RAGProcessor : orquesta
+SearchService -down-> DocumentLoader : usa
+RAGProcessor -down-> VectorStoreManager : usa
+RAGProcessor -down-> PromptBuilder : usa
+VectorStoreManager -down-> ChromaDB : persiste
+DocumentLoader -down-> DatasetExcel : lee
+
+RAGProcessor -down-> OpenAI_API : embeddings/LLM
+TranscripcionUtils -down-> OpenAI_API : Whisper
+HFUtils -down-> HuggingFace : generación
+SpacyUtils -down-> SpaCy_Model : NER
+
+HealthOrchestrator -down-> AppConfig : usa
+
+DataLayer -[hidden]right-> ExternalServices
+
+@enduml

@@ -1,0 +1,119 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Diagrama de Componentes - Buscador Inteligente de Prestadores de Salud
+
+LAYOUT_LEFT_RIGHT()
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+
+' Estilos por capas para mejorar legibilidad
+AddElementTag("app")
+UpdateElementStyle("app", $bgColor="#E6F3FF", $borderColor="#4682B4")
+
+AddElementTag("ui")
+UpdateElementStyle("ui", $bgColor="#F0FFF0", $borderColor="#2E8B57")
+
+AddElementTag("orchestrator")
+UpdateElementStyle("orchestrator", $bgColor="#FFF8E1", $borderColor="#E0A800")
+
+AddElementTag("config")
+UpdateElementStyle("config", $bgColor="#FFFDE7", $borderColor="#FBC02D")
+
+AddElementTag("functions")
+UpdateElementStyle("functions", $bgColor="#FFF0F6", $borderColor="#C2185B")
+
+AddElementTag("utils")
+UpdateElementStyle("utils", $bgColor="#F0F4FF", $borderColor="#3F51B5")
+
+AddElementTag("rag-internals")
+UpdateElementStyle("rag-internals", $bgColor="#EEF5FF", $borderColor="#5C6BC0")
+
+AddElementTag("external")
+UpdateElementStyle("external", $bgColor="#ecc37fff", $borderColor="#FB8C00")
+
+AddElementTag("data")
+UpdateElementStyle("data", $bgColor="#9574c5ff", $borderColor="#673AB7")
+
+Person(usuario, "Usuario", "Persona que busca prestadores de salud")
+
+Container_Boundary(app_boundary, "Aplicación Streamlit") {
+    ' Interfaz principal
+    Component(app_main, "app.py", "Streamlit App", "UI principal: selecciona método de entrada, muestra resultados", "", "app")
+
+    ' Módulos de aplicación (UI, Accesibilidad, Orquestación, Config)
+    Container_Boundary(app_modules, "Módulos de Aplicación") {
+        Component(ui_module, "application/ui.py", "UI Components", "Texto/Audio, botones, decorador de estado, resultados", "", "ui")
+        Component(access_module, "application/accessibility.py", "Accessibility Components", "Mensajes, atajos, estilos, progreso", "", "ui")
+        Component(orchestrator_module, "application/orchestration.py", "HealthOrchestrator", "Coordina transcripción, extracción y RAG", "", "orchestrator")
+        Component(config_module, "application/config.py", "App Config", "APP_CONFIG, HELP, STATUS, CSS, ACCESSIBILITY", "", "config")
+    }
+
+    ' Functions (capa de negocio ligera)
+    Container_Boundary(functions_boundary, "Functions Layer") {
+        Component(transcripcion_func, "functions/transcripcion.py", "Transcripción", "Envuelve y muestra estado al transcribir audio", "", "functions")
+        Component(extraccion_func, "functions/extraccion.py", "Extracción", "NER con spaCy + clasificación con HF", "", "functions")
+        Component(rag_func, "functions/rag.py", "RAG", "Búsqueda de prestadores (RAG)", "", "functions")
+    }
+
+    ' Utils (integraciones técnicas)
+    Container_Boundary(utils_boundary, "Utils Layer") {
+        Component(whisper_utils, "utils/whisper_utils.py", "Transcripción Utils", "OpenAI Whisper (audio -> texto)", "", "utils")
+        Component(hf_utils, "utils/hf_utils.py", "Hugging Face Utils", "Transformers local o Endpoint HF", "", "utils")
+        Component(spacy_utils, "utils/spacy_utils.py", "spaCy Utils", "NER con SciSpaCy en_core_sci_sm", "", "utils")
+        Component(rag_utils, "utils/rag_utils.py", "RAG Utils", "ChromaDB + LangChain: embeddings, retriever, QA", "", "utils")
+
+        Container_Boundary(rag_internals, "RAG Utils Internos") {
+            Component(doc_loader, "DocumentLoader", "Clase", "Carga filas de Excel como Documents", "", "rag-internals")
+            Component(vs_manager, "VectorStoreManager", "Clase", "Gestión de ChromaDB y embeddings", "", "rag-internals")
+            Component(prompt_builder, "PromptBuilder", "Clase", "Plantillas de prompts para QA", "", "rag-internals")
+            Component(rag_processor, "RAGProcessor", "Clase", "Divide, indexa, retriever y QA", "", "rag-internals")
+            Component(search_service, "SearchService", "Clase", "Búsqueda por especialidad (servicio)", "", "rag-internals")
+        }
+    }
+}
+
+' Sistemas y datos externos
+SystemDb(chroma_db, "ChromaDB", "Persistencia de vectores (./chroma_db)", "", "data")
+SystemDb(datasets, "Datasets Excel", "datasets/dataset_ejemplo.xlsx", "", "data")
+
+System_Ext(openai_api, "OpenAI API", "Whisper-1 (audio) y OpenAI (Embeddings/Chat)", "", "external")
+System_Ext(huggingface_hub, "Hugging Face", "Transformers local / Inference Endpoint", "", "external")
+System_Ext(scispacy_models, "SciSpaCy Model", "Modelo en_core_sci_sm", "", "external")
+
+' Relaciones usuario
+Rel_R(usuario, app_main, "Interactúa", "Navegador web")
+
+' Relaciones App -> Módulos
+Rel_R(app_main, ui_module, "Usa", "import/call")
+Rel_D(app_main, config_module, "Lee configuración y estilos", "import")
+Rel_R(app_main, orchestrator_module, "Orquesta flujo", "call")
+
+' Orquestación
+Rel_D(orchestrator_module, transcripcion_func, "Transcripción", "call")
+Rel_D(orchestrator_module, extraccion_func, "Extracción NER/HF", "call")
+Rel_D(orchestrator_module, rag_func, "Búsqueda RAG", "call")
+
+' Functions -> Utils
+Rel_D(transcripcion_func, whisper_utils, "Usa Whisper", "call")
+Rel_D(extraccion_func, hf_utils, "Generación/Clasificación", "call")
+Rel_D(extraccion_func, spacy_utils, "NER", "call")
+Rel_D(rag_func, rag_utils, "Consulta RAG", "call")
+
+' RAG Utils internals
+Rel_R(search_service, rag_processor, "Orquesta", "call")
+Rel_D(search_service, doc_loader, "Carga documentos", "call")
+Rel_D(rag_processor, vs_manager, "Vectorstore", "call")
+Rel_R(rag_processor, prompt_builder, "Prompt", "call")
+
+' Integraciones externas
+Rel_D(whisper_utils, openai_api, "Transcribe audio", "HTTPS API")
+Rel_D(vs_manager, openai_api, "Embeddings", "HTTPS API")
+Rel_D(rag_processor, openai_api, "LLM/Chat", "HTTPS API")
+Rel_D(hf_utils, huggingface_hub, "Modelos locales / Endpoint HF", "Transformers/HTTP")
+Rel_D(spacy_utils, scispacy_models, "Carga modelo NER", "Local")
+Rel_D(vs_manager, chroma_db, "Persistencia y consulta", "Chroma Client")
+Rel_D(doc_loader, datasets, "Lee Excel", "pandas I/O")
+
+@enduml
